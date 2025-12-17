@@ -1,0 +1,379 @@
+package jdbcproject;
+
+import java.util.*;
+import java.sql.*;
+import java.sql.Driver;
+import java.sql.Connection;
+
+
+public class RecycleBin {
+
+    public static void main(String[] args) throws Exception {
+
+      Scanner scanner=new Scanner(System.in);
+
+      try {
+
+        Class.forName("com.mysql.cj.jdbc.Driver");
+
+        String url="jdbc:mysql://localhost:3306/jdbc_db";
+
+        String db="root";
+
+        String password="root";
+
+        Connection con=DriverManager.getConnection(url,db,password);
+
+        //roll Number
+
+        //name
+
+        //course
+
+        //marks
+
+        int input_index=1;
+
+        while(input_index==1)
+
+        {
+
+          System.out.println("1. Insert Student");
+
+        System.out.println("2. View All Students");
+
+        System.out.println("3. Search Student");
+
+        System.out.println("4. Update Marks");
+
+        System.out.println("5. Delete Student");
+
+        System.out.println("6. Exit");
+
+       
+
+        System.out.println("Enter your choice");
+
+        int choice=scanner.nextInt();
+
+        scanner.nextLine();
+
+        switch(choice)
+
+        {
+
+          case 1:
+
+            System.out.println("Enter Roll Number: ");
+
+            int roll=scanner.nextInt();
+
+            scanner.nextLine();
+
+            System.out.println("Enter Name: ");
+
+            String name=scanner.nextLine();
+
+            System.out.println("Enter Course: ");
+
+            String course=scanner.nextLine();
+
+            System.out.println("Enter Marks: ");
+
+            int marks=scanner.nextInt();
+
+            scanner.nextLine();
+			char grade;
+
+            if(marks>=80)
+
+            grade='A';
+
+            else if(marks>=60)
+
+            grade='B';
+
+            else if(marks>=40)
+
+            grade='C';
+
+            else
+
+            grade='F';
+
+            PreparedStatement ps=con.prepareStatement("insert into studenttablemain values(?,?,?,?,?)");
+
+            ps.setInt(1,roll);
+
+            ps.setString(2,name);
+
+            ps.setString(3,course);
+
+            ps.setInt(4,marks);
+
+            ps.setString(5,String.valueOf(grade));
+
+            int count=ps.executeUpdate();
+
+            if(count>0)
+
+            System.out.println("Updated");
+
+            else{
+
+              System.out.println("Not Updated");
+
+            }
+
+            break;
+
+           
+
+          case 2:
+
+            ps=con.prepareStatement("select * from studenttablemain");
+
+            ResultSet rs=ps.executeQuery();
+
+            while(rs.next())
+
+            {
+
+              int roll1=rs.getInt("roll_no");
+
+              String name1=rs.getString("name");
+
+              String course1=rs.getString("course");
+
+              int marks1=rs.getInt("marks");
+
+              char grade1=rs.getString("grade").charAt(0);
+
+              System.out.println("Roll no: "+roll1);
+
+              System.out.println("Name: "+name1);
+
+              System.out.println("Course: "+course1);
+
+              System.out.println("Marks: "+marks1);
+
+              System.out.println("Grade: "+grade1);
+
+            }
+
+            break;
+
+         
+
+          case 3:
+
+              roll=scanner.nextInt();
+
+              scanner.nextLine();
+
+              ps=con.prepareStatement("select * from studenttablemain where roll_no=?");
+			  ps.setInt(1,roll);
+
+              rs=ps.executeQuery();
+
+              while(rs.next())
+
+              {
+
+              int roll1 = rs.getInt("roll_no");
+
+             String name1=rs.getString("name");
+
+              String course1=rs.getString("course");
+
+              int marks1=rs.getInt("marks");
+
+              char grade1=rs.getString("grade").charAt(0);
+
+              System.out.println("Roll no: "+roll1);
+
+              System.out.println("Name: "+name1);
+
+              System.out.println("Course: "+course1);
+
+              System.out.println("Marks: "+marks1);
+
+              System.out.println("Grade: "+grade1);
+
+              }
+
+              break;
+
+             
+
+            case 4:
+
+              roll=scanner.nextInt();
+
+              scanner.nextLine();
+
+              marks=scanner.nextInt();
+
+              scanner.nextLine();
+
+               if(marks>=80)
+
+                grade='A';
+
+               else if(marks>=60)
+
+                grade='B';
+
+               else if(marks>=40)
+
+                grade='C';
+
+               else
+
+                grade='F';
+
+              ps=con.prepareStatement("update studenttablemain set marks=?,grade=? where roll_no=?");
+			  ps.setInt(1, marks);
+              ps.setString(2, String.valueOf(grade));
+              ps.setInt(3, roll);
+
+              int count2=ps.executeUpdate();
+
+              if(count2>0)
+
+              System.out.println("Marks and Grade Updated");
+
+              else{
+
+              System.out.println("Marks and Grade are not updated");
+
+              }
+
+              break;
+
+             
+
+            
+
+             case 5:
+               System.out.println("Enter Roll Number to delete:");
+               roll = scanner.nextInt();
+               scanner.nextLine();
+
+              try {
+              con.setAutoCommit(false); // transaction start
+
+               // STEP 1: Fetch student
+               PreparedStatement psSelect =
+                   con.prepareStatement(
+                       "select * from studenttablemain where roll_no=?"
+                     );
+        psSelect.setInt(1, roll);
+
+        ResultSet rsDel = psSelect.executeQuery();
+
+        if (!rsDel.next()) {
+            System.out.println("Student not found");
+            con.rollback();
+            break;
+        }
+
+        // Store values
+        int dRoll = rsDel.getInt("roll_no");
+        String dName = rsDel.getString("name");
+        String dCourse = rsDel.getString("course");
+        int dMarks = rsDel.getInt("marks");
+        String dGrade = rsDel.getString("grade");
+
+        // STEP 2: Insert into fallback DB
+        String furl = "jdbc:mysql://localhost:3306/jdbc_db_fallback";
+        String fdb = "root";
+        String fpassword = "root";
+
+        Connection fcon =
+            DriverManager.getConnection(furl, fdb, fpassword);
+
+        PreparedStatement psInsert =
+            fcon.prepareStatement(
+                "insert into studenttablemainfallback values(?,?,?,?,?)"
+            );
+
+        psInsert.setInt(1, dRoll);
+        psInsert.setString(2, dName);
+        psInsert.setString(3, dCourse);
+        psInsert.setInt(4, dMarks);
+        psInsert.setString(5, dGrade);
+
+        psInsert.executeUpdate();
+
+        // STEP 3: Delete from main DB
+        PreparedStatement psDelete =
+            con.prepareStatement(
+                "delete from studenttablemain where roll_no=?"
+            );
+        psDelete.setInt(1, roll);
+        psDelete.executeUpdate();
+
+        con.commit(); // success
+
+        System.out.println(
+            "Student deleted and backup stored in fallback DB"
+        );
+
+        psSelect.close();
+        psDelete.close();
+        psInsert.close();
+        fcon.close();
+
+    } catch (Exception e) {
+        con.rollback();
+        System.out.println("Error: " + e.getMessage());
+    } finally {
+        con.setAutoCommit(true);
+    }
+    break;
+
+
+             
+
+          case 6:
+            input_index = 0;
+            break;
+
+        }
+
+        System.out.println("Do you want to continue? if yes then press 1 else press 0");
+
+        input_index=scanner.nextInt();
+
+        }
+
+      }
+
+      catch(ClassNotFoundException e)
+
+      {
+
+        System.out.println("Error: "+e.getMessage());
+
+      }
+
+      catch(SQLException e)
+
+      {
+
+        System.out.println("Error: "+e.getMessage());
+
+      }
+
+      catch(Exception e)
+
+      {
+
+        System.out.println("Error "+e.getMessage());
+
+      }
+      scanner.close();
+  }
+
+}
